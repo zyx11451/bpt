@@ -53,14 +53,6 @@ namespace king_zyx{
             data=temp;
         };
     public:
-        /**
-         * TODO
-         * a type for actions of the elements of a vector, and you should write
-         *   a class named const_iterator with same interfaces.
-         */
-        /**
-         * you can see RandomAccessIterator at CppReference for help.
-         */
         class const_iterator;
         class iterator
         {
@@ -83,11 +75,6 @@ namespace king_zyx{
             using iterator_category = std::output_iterator_tag;
 
         private:
-            /**
-             * TODO add data members
-             *   just add whatever you want.
-             */
-
             vector<T>* belongs_to_which_vector;
 
         public:
@@ -102,13 +89,13 @@ namespace king_zyx{
              */
             iterator operator+(const int &n) const
             {
-                //TODO
+
                 iterator ans(pt+n,belongs_to_which_vector);
                 return ans;
             }
             iterator operator-(const int &n) const
             {
-                //TODO
+
                 iterator ans(pt-n,belongs_to_which_vector);
                 return ans;
             }
@@ -116,70 +103,56 @@ namespace king_zyx{
             // if these two iterators point to different vectors, throw invaild_iterator.
             int operator-(const iterator &rhs) const
             {
-                //TODO
+
                 if(rhs.belongs_to_which_vector!=belongs_to_which_vector) throw invalid_iterator();
                 return pt-rhs.pt;
             }
             iterator& operator+=(const int &n)
             {
-                //TODO
+
                 pt+=n;
                 return *this;
             }
             iterator& operator-=(const int &n)
             {
-                //TODO
+
                 pt-=n;
                 return *this;
             }
-            /**
-             * TODO iter++
-             */
+
             iterator operator++(int) {
                 iterator temp(pt,belongs_to_which_vector);
                 pt++;
                 return temp;
             }
-            /**
-             * TODO ++iter
-             */
+
             iterator& operator++() {
                 pt++;
                 return *this;
             }
-            /**
-             * TODO iter--
-             */
+
             iterator operator--(int) {
                 iterator temp(pt,belongs_to_which_vector);
                 pt--;
                 return temp;
             }
-            /**
-             * TODO --iter
-             */
+
             iterator& operator--() {
                 pt--;
                 return *this;
             }
-            /**
-             * TODO *it
-             */
+
             T& operator*() const{
                 return *pt;
             }
-            /**
-             * a operator to check whether two iterators are same (pointing to the same memory address).
-             */
+
             bool operator==(const iterator &rhs) const {
                 return (pt==rhs.pt)&&(belongs_to_which_vector==rhs.belongs_to_which_vector);
             }
             bool operator==(const const_iterator &rhs) const {
                 return (pt==rhs.pt)&&(belongs_to_which_vector==rhs.belongs_to_which_vector);
             }
-            /**
-             * some other operator for iterator.
-             */
+
             bool operator!=(const iterator &rhs) const {
                 return !((pt==rhs.pt)&&(belongs_to_which_vector==rhs.belongs_to_which_vector));
             }
@@ -187,10 +160,7 @@ namespace king_zyx{
                 return !((pt==rhs.pt)&&(belongs_to_which_vector==rhs.belongs_to_which_vector));
             }
         };
-        /**
-         * TODO
-         * has same function as iterator, just for a const object.
-         */
+
         class const_iterator
         {
         public:
@@ -201,7 +171,7 @@ namespace king_zyx{
             using iterator_category = std::output_iterator_tag;
 
         private:
-            /*TODO*/
+
 
 
         public:
@@ -213,7 +183,7 @@ namespace king_zyx{
      */
             const_iterator operator+(const int &n) const
             {
-                //TODO
+
                 const_iterator ans;
                 ans.pt=pt+n;
                 ans.belongs_to_which_vector=belongs_to_which_vector;
@@ -221,7 +191,7 @@ namespace king_zyx{
             }
             const_iterator operator-(const int &n) const
             {
-                //TODO
+
                 const_iterator ans;
                 ans.pt=pt-n;
                 ans.belongs_to_which_vector=belongs_to_which_vector;
@@ -231,25 +201,23 @@ namespace king_zyx{
             // if these two iterators point to different vectors, throw invaild_iterator.
             int operator-(const const_iterator &rhs) const
             {
-                //TODO
+
                 if(rhs.belongs_to_which_vector!=belongs_to_which_vector) throw invalid_iterator();
                 return pt-rhs.pt;
             }
             const_iterator& operator+=(const int &n)
             {
-                //TODO
+
                 pt+=n;
                 return *this;
             }
             const_iterator& operator-=(const int &n)
             {
-                //TODO
+
                 pt-=n;
                 return *this;
             }
-            /**
-             * TODO iter++
-             */
+
             const_iterator operator++(int) {
                 const_iterator temp;
                 temp.pt=pt;
@@ -257,38 +225,28 @@ namespace king_zyx{
                 pt++;
                 return temp;
             }
-            /**
-             * TODO ++iter
-             */
+
             const_iterator& operator++() {
                 pt++;
                 return *this;
             }
-            /**
-             * TODO iter--
-             */
+
             const_iterator operator--(int) {
                 const_iterator temp;
                 temp.pt=pt;
                 temp.belongs_to_which_vector=belongs_to_which_vector;
                 return temp;
             }
-            /**
-             * TODO --iter
-             */
+
             const_iterator& operator--() {
                 pt--;
                 return *this;
             }
-            /**
-             * TODO *it
-             */
+
             const T& operator*() const{
                 return *pt;
             }
-            /**
-             * a operator to check whether two iterators are same (pointing to the same memory address).
-             */
+
             bool operator==(const iterator &rhs) const {
                 return (pt==rhs.pt)&&(belongs_to_which_vector==rhs.belongs_to_which_vector);
             }
@@ -305,10 +263,7 @@ namespace king_zyx{
                 return !((pt==rhs.pt)&&(belongs_to_which_vector==rhs.belongs_to_which_vector));
             }
         };
-        /**
-         * TODO Constructs
-         * At least two: default constructor, copy constructor
-         */
+
         vector() {
             capacity=1;
             len=0;
@@ -322,18 +277,14 @@ namespace king_zyx{
                 new(data+i) T(*(other.data+i));
             }
         }
-        /**
-         * TODO Destructor
-         */
+
         ~vector() {
             for(int i=0;i<len;++i){
                 (data+i)->~T();
             }
             free(data);
         }
-        /**
-         * TODO Assignment operator
-         */
+
         vector &operator=(const vector &other) {
             if(other.data==data) return *this;
             free(data);
@@ -564,22 +515,27 @@ namespace king_zyx{
         }
         return first;
     }
-
+    template<class key,class value>
+    struct datatype{
+        key k;
+        value d;
+        datatype(){};
+        datatype(key k_,value v_):k(k_),d(v_){};
+    };
     template<class key,class value>
     class BPT;
 
     template<class key,class value>
     class Node{
+        //存储子节点或块的元素的最大值
     public:
+        typedef datatype<key,value> s;
         static const int size=4000/(sizeof(key)+ sizeof(value)+ sizeof(int));
-        int Node_ID;
+        int Node_ID;//1,2,3...
         int father;
         int len;
         int son[size]={};
-        struct s{
-            key k;
-            value v;
-        };
+
         s d[size]={};
         bool is_father_of_block;
         friend class BPT<key,value>;
@@ -593,13 +549,10 @@ namespace king_zyx{
     template<class key,class value>
     class Block{
         static const int size=4000/(sizeof(key)+ sizeof(value));
-        int Block_ID;
+        int Block_ID;//1,2,3...
         int father;
         int len;
-        struct s{
-            key k;
-            value v;
-        };
+        typedef datatype<key,value> s;
         s d[size]={};
         int next;
         friend class BPT<key,value>;
@@ -622,43 +575,46 @@ namespace king_zyx{
         std::string block_file_name;
         std::fstream block_data;
         node_type root;
-        struct s{
-            key k;
-            value d;
-            s(){};
-            s(key k_,value v_):k(k_),d(v_){};
-        };
+        typedef datatype<key,value> s;
     public:
         void read_node(int index,node_type& target){
-            node_data.seekg(index * sizeof(node_type));
+            node_data.seekg((index-1) * sizeof(node_type));
             node_data.read(reinterpret_cast<char*>(& target), sizeof(node_type));
         }
         void write_node(int index,node_type& target){
-            node_data.seekp(index * sizeof(node_type));
+            node_data.seekp((index-1) * sizeof(node_type));
             node_data.write(reinterpret_cast<char*>(& target), sizeof(node_type));
         }
         void read_block(int index,block_type& target){
-            block_data.seekg(index * sizeof(block_type));
+            block_data.seekg((index-1) * sizeof(block_type));
             block_data.read(reinterpret_cast<char*>(& target), sizeof(block_type));
         }
         void write_block(int index,block_type& target){
-            block_data.seekp(index * sizeof(block_type));
+            block_data.seekp((index-1) * sizeof(block_type));
             block_data.write(reinterpret_cast<char*>(& target), sizeof(node_type));
         }
-        void calculate_node_and_block_amount_by_dfs(node_type now_node,int &n_a,int &b_a){
-            int node_ans=0,block_ans=0;
+        void calculate_node_amount_by_dfs(node_type now_node,int &n_a){
+            //计算的是节点序号和块序号的最大值，因为操作中会出现一些序号的块被废弃的现象
+            n_a= std::max(n_a,now_node.Node_ID);
             if(now_node.is_father_of_block) {
-                ++node_ans;
-                ++block_ans;
+                return;
             }else{
                 node_type nxt_node;
                 for(int i=0;i<now_node.len;++i){
                     read_node(now_node.son[i],nxt_node);
-                    calculate_node_and_block_amount_by_dfs(nxt_node,node_ans,block_ans);
+                    calculate_node_and_block_amount_by_dfs(nxt_node,n_a);
                 }
             }
-            n_a+=node_ans;
-            b_a+=block_ans;
+
+        };
+        void calculate_block_amount(int &b_a){
+          block_type now_block;
+          //1一定活着，且元素最小
+          read_block(1,now_block);
+          while(now_block.next!=-1){
+              b_a=std::max(b_a,now_block.Block_ID);
+              read_block(now_block.Block_ID,now_block);
+          }
         };
         BPT(const std::string &node_name="nodes",const std::string &block_name="blocks"){
             node_file_name=node_name;
@@ -681,22 +637,32 @@ namespace king_zyx{
                 root.father=-1;
                 root.son[0]=1;
                 first_block.len=0;
-                write_node(0,root);
-                write_block(0,first_block);
+                write_node(1,root);
+                write_block(1,first_block);
             }else{
                 //dfs
                 block_data.open(block_file_name);
                 node_type now_node;
                 block_type now_block;
                 int node_amount=0,block_amount=0;
-                calculate_node_and_block_amount_by_dfs(root,node_amount,block_amount);
+                read_node(1,root);
+                while(root.father!=-1) read_node(root.father,root);
+                calculate_node_amount_by_dfs(root,node_amount);
+                calculate_block_amount(block_amount);
                 node_number=node_amount;
                 block_number=block_amount;
-                read_node(0,root);
             }
         };
-        int find(s target,block_type& loc){
-
+        int find(s &target,int now_node_ID,block_type &pos){
+            node_type temp;
+            read_node(now_node_ID,temp);
+            int t= upper_bound(temp.d,temp.d+temp.len,target)-temp.d;
+            if(temp.is_father_of_block){
+                read_block(temp.son[t],pos);
+                return upper_bound(pos.d,pos.d+pos.len,target)-pos.d;
+            }else{
+                return find(target,temp.son[t],pos);
+            }
         }
         void merge_node(){
 
@@ -704,17 +670,134 @@ namespace king_zyx{
         void merge_block(){
 
         };
-        void split_node();
-        void split_block();
-        void node_insert();
-        void node_erase();
-        void insert(key k_,value v_){
-            //第一个元素时特判
+
+
+        void node_insert(int target_ID,s& target,int new_son_ID){
+            node_type target_node;
+            read_node(target_ID,target_node);
+            int t= upper_bound(target_node.d,target_node.d+target_node.len,target)-target_node.d;
+            for(int i=target_node.len;i>t;--i){
+                target_node.d[i]=target_node.d[i-1];
+                target_node.son[i]=target_node.son[i-1];
+            }
+            target_node.d[t]=target;
+            target_node.son[t]=target_node.son[t+1];
+            target_node.son[t+1]=new_son_ID;
+            ++target_node.len;
+            write_node(target_ID,target_node);
+            if(target_node.len==target_node.size) split_node(target_ID);
+        };
+        void split_node(int target_ID){
+            node_type target_node;
+            node_type new_node;
+            ++node_number;
+            new_node.Node_ID=node_number;
+            read_node(target_ID,target_node);
+            for(int i=0;i<target_node.len/2;++i){
+                new_node.d[i]=target_node.d[i+target_node.len-target_node.len/2];
+                new_node.son[i]=target_node.son[i+target_node.len-target_node.len/2];
+            }
+            new_node.len=target_node.len/2;
+            target_node.len-=new_node.len;
+            new_node.father=target_node.father;
+            new_node.is_father_of_block=target_node.is_father_of_block;
+
+            if(target_node.father!=-1){
+                node_insert(target_node.father,target_node.d[target_node.len-1],new_node.Node_ID);
+            }else{
+                node_type new_root;
+                ++node_number;
+                new_root.Node_ID=node_number;
+                new_root.d[0]=target_node.d[target_node.len-1];
+                new_root.d[1]=new_node.d[new_node.len-1];
+                new_root.son[0]=target_node.Node_ID;
+                new_root.son[1]=new_node.Node_ID;
+                new_root.father=-1;
+                target_node.father=new_root.Node_ID;
+                new_node.father=new_root.Node_ID;
+                new_root.len=2;
+                new_root.is_father_of_block= false;
+                root=new_root;
+                write_node(new_root.Node_ID,new_root);
+            }
+            write_node(target_node.Node_ID,target_node);
+            write_node(new_node.Node_ID,new_node);
+        };
+        void split_block(int target_ID){
+            block_type target_block;
+            block_type new_block;
+            ++block_number;
+            new_block.Block_ID=block_number;
+            read_block(target_ID,target_block);
+            for(int i=0;i<target_block.len/2;++i){
+                new_block.d[i]=target_block.d[i+target_block.len-target_block.len/2];
+            }
+            new_block.len=target_block.len/2;
+            target_block.len-=new_block.len;
+            new_block.next=target_block.next;
+            target_block.next=new_block.Block_ID;
+            new_block.father=target_block.father;
+            node_insert(target_block.father,target_block.d[target_block.len-1],new_block.Block_ID);
+            write_block(target_block.Block_ID,target_block);
+            write_block(new_block.Block_ID,new_block);
         };
 
-        void erase();
+        void node_erase(){
+
+        };
+        void insert(key k_,value v_){
+            block_type target_block;
+            node_type now_node;
+            //第一个元素时特判
+            //并块时确保1不被并进别的里
+            read_block(1,target_block);
+            if(target_block.len==0){
+                ++target_block.len;
+                target_block.d[0].k=k_;
+                target_block.d[0].v=v_;
+                ++root.len;
+                root.d[0].k=k_;
+                root.d[0].v=v_;
+                write_block(1,target_block);
+            }else{
+                s target(k_,v_);
+                /*if(root.len==0){
+                    //root节点无关键字时特判。
+                    int t=upper_bound(target_block.d,target_block.d+target_block.len,target)-target_block.d;
+                    for(int i=target_block.len;i>t;--i){
+                        target_block.d[i]=target_block.d[i-1];
+                    }
+                    target_block.d[t]=target;
+                    target_block.len++;
+                    write_block(target_block.Block_ID,target_block);
+                    if(target_block.len==target_block.size) split_block(target_block.Block_ID);
+                    return;
+                }*/
+                int t= find(target,root.Node_ID,target_block);
+                for(int i=target_block.len;i>t;--i){
+                    target_block.d[i]=target_block.d[i-1];
+                }
+                target_block.d[t]=target;
+                target_block.len++;
+                write_block(target_block.Block_ID,target_block);
+                if(target_block.len==target_block.size) split_block(target_block.Block_ID);
+            }
+        };
+
+        void erase(key k_,value v_){
+            s target(k_,v_);
+            block_type target_block;
+            int t= find(target,root.Node_ID,target_block);
+            if(target_block.d[t-1]<target) return;
+            for(int i=t;i<target_block.len;++i){
+                target_block.d[i-1]=target_block.d[i];
+            }
+            --target_block.len;
+        };
         vector<s> dis();
     };
 
 
+}
+int main(){
 }
