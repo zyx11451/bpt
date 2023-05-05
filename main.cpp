@@ -1,9 +1,13 @@
 //bpt
+//#pragma GCC optimize(2)
 #include <iostream>
 #include <fstream>
 #include <cstring>
 #include <cmath>
 #include <string>
+#include <algorithm>
+#include <set>
+
 const int disk_block_size=4096;
 namespace king_zyx{
     class exception {
@@ -517,10 +521,46 @@ namespace king_zyx{
     }
     template<class key,class value>
     struct datatype{
+    public:
         key k;
-        value d;
+        value v;
         datatype(){};
-        datatype(key k_,value v_):k(k_),d(v_){};
+        datatype(key k_,value v_){
+            k=k_;
+            v=v_;
+        };
+        datatype& operator=(const datatype& other){
+            if(&other== this) return *this;
+            k=other.k;
+            v=other.v;
+            return *this;
+        }
+        bool operator>(datatype &b) {
+            if(k!=b.k) return k>b.k;
+            else return v>b.v;
+        }
+
+        bool operator<(datatype &b) {
+            if(k!=b.k) return k<b.k;
+            else return v<b.v;
+        }
+
+        bool operator==(datatype &b) {
+            return k==b.k&&v==b.v;
+        }
+
+        bool operator!=(datatype &b) {
+            return !(k==b.k&&v==b.v);
+        }
+        bool operator>=(datatype &b) {
+            if(k!=b.k) return k>b.k;
+            else return v>=b.v;
+        }
+
+        bool operator<=(datatype &b) {
+            if(k!=b.k) return k<b.k;
+            else return v<=b.v;
+        }
     };
     template<class key,class value>
     class BPT;
@@ -534,17 +574,30 @@ namespace king_zyx{
         int Node_ID;//1,2,3...
         int father;
         int len;
-        int son[size]={};
 
         s d[size]={};
         bool is_father_of_block;
         friend class BPT<key,value>;
     public:
+        int son[size+1]={};
         Node(){
             father=0;
             len=0;
             is_father_of_block=true;
         };
+        Node& operator=(const Node& other){
+            if(&other==this) return *this;
+            Node_ID=other.Node_ID;
+            father=other.father;
+            len=other.len;
+            is_father_of_block=other.is_father_of_block;
+            for(int i=0;i<size;++i){
+                d[i]=other.d[i];
+                son[i]=other.son[i];
+            }
+            son[size]=other.son[size];
+            return *this;
+        }
     };
     template<class key,class value>
     class Block{
@@ -554,9 +607,10 @@ namespace king_zyx{
         int len;
         typedef datatype<key,value> s;
         s d[size]={};
-        int next;
+
         friend class BPT<key,value>;
     public:
+        int next;
         Block(){
             father=0;
             len=0;
@@ -574,27 +628,42 @@ namespace king_zyx{
         std::fstream node_data;
         std::string block_file_name;
         std::fstream block_data;
-        node_type root;
+
         typedef datatype<key,value> s;
+        struct head{
+            int nn;
+            int bn;
+            int root_ID;
+        };
     public:
+        node_type root;
+        void read_head(head &t){
+            block_data.seekg(0);
+            block_data.read(reinterpret_cast<char *>(& t), sizeof(head));
+        }
+        void write_head(head &t){
+            block_data.seekp(0);
+            block_data.write(reinterpret_cast<char *>(& t), sizeof(head));
+        }
         void read_node(int index,node_type& target){
             node_data.seekg((index-1) * sizeof(node_type));
-            node_data.read(reinterpret_cast<char*>(& target), sizeof(node_type));
+            node_data.read(reinterpret_cast<char *>(& target), sizeof(node_type));
         }
         void write_node(int index,node_type& target){
             node_data.seekp((index-1) * sizeof(node_type));
-            node_data.write(reinterpret_cast<char*>(& target), sizeof(node_type));
+            node_data.write(reinterpret_cast<char *>(& target), sizeof(node_type));
         }
         void read_block(int index,block_type& target){
-            block_data.seekg((index-1) * sizeof(block_type));
-            block_data.read(reinterpret_cast<char*>(& target), sizeof(block_type));
+            block_data.seekg(sizeof(head)+(index - 1) * sizeof(block_type));
+            block_data.read(reinterpret_cast<char *>(& target), sizeof(block_type));
         }
         void write_block(int index,block_type& target){
-            block_data.seekp((index-1) * sizeof(block_type));
-            block_data.write(reinterpret_cast<char*>(& target), sizeof(node_type));
+            block_data.seekp(sizeof(head)+(index - 1) * sizeof(block_type));
+            block_data.write(reinterpret_cast<char *>(& target), sizeof(block_type));
         }
         void calculate_node_amount_by_dfs(node_type now_node,int &n_a){
             //计算的是节点序号和块序号的最大值，因为操作中会出现一些序号的块被废弃的现象
+            //废弃
             n_a= std::max(n_a,now_node.Node_ID);
             if(now_node.is_father_of_block) {
                 return;
@@ -602,12 +671,13 @@ namespace king_zyx{
                 node_type nxt_node;
                 for(int i=0;i<now_node.len;++i){
                     read_node(now_node.son[i],nxt_node);
-                    calculate_node_and_block_amount_by_dfs(nxt_node,n_a);
+                    calculate_node_amount_by_dfs(nxt_node,n_a);
                 }
             }
 
         };
         void calculate_block_amount(int &b_a){
+            //废弃
           block_type now_block;
           //1一定活着，且元素最小
           read_block(1,now_block);
@@ -621,15 +691,18 @@ namespace king_zyx{
             block_file_name=block_name;
             node_data.open(node_file_name);
             if(!node_data){
+
                 node_data.open(node_file_name,std::ios::out);
                 node_data.close();
                 node_data.open(node_file_name);
                 block_data.open(block_file_name,std::ios::out);
                 block_data.close();
                 block_data.open(block_file_name);
+                head h;
+                write_head(h);
                 ++node_number;
                 root.Node_ID=node_number;
-                root.len=1;
+                root.len=0;
                 block_type first_block;
                 first_block.next=end_pos;
                 ++block_number;
@@ -637,91 +710,194 @@ namespace king_zyx{
                 root.father=-1;
                 root.son[0]=1;
                 first_block.len=0;
+                first_block.father=root.Node_ID;
                 write_node(1,root);
                 write_block(1,first_block);
             }else{
-                //dfs
                 block_data.open(block_file_name);
-                node_type now_node;
-                block_type now_block;
-                int node_amount=0,block_amount=0;
-                read_node(1,root);
-                while(root.father!=-1) read_node(root.father,root);
-                calculate_node_amount_by_dfs(root,node_amount);
-                calculate_block_amount(block_amount);
-                node_number=node_amount;
-                block_number=block_amount;
+                head h;
+                read_head(h);
+                read_node(h.root_ID,root);
+                node_number=h.nn;
+                block_number=h.bn;
             }
         };
-        int find(s &target,int now_node_ID,block_type &pos){
+        ~BPT(){
+            head h;
+            h.bn=block_number;
+            h.nn=node_number;
+            h.root_ID=root.Node_ID;
+            write_head(h);
+        }
+        inline int find(s &target,int now_node_ID,block_type &pos){
             node_type temp;
             read_node(now_node_ID,temp);
             int t= upper_bound(temp.d,temp.d+temp.len,target)-temp.d;
             if(temp.is_father_of_block){
                 read_block(temp.son[t],pos);
+                if(pos.len==0) return 0;
                 return upper_bound(pos.d,pos.d+pos.len,target)-pos.d;
             }else{
                 return find(target,temp.son[t],pos);
             }
         }
-        void merge_node(){
+        void merge_node(node_type &now_son_node,node_type &father_node){
 
+            int t;
+            if(now_son_node.len==0){
+                for(t=0;t<=father_node.len;++t) if(father_node.son[t]==now_son_node.Node_ID) break;
+            }else
+            t= upper_bound(father_node.d,father_node.d+father_node.len,now_son_node.d[now_son_node.len-1])-father_node.d;
+            if(t>=father_node.len) return;
+            node_type next_node;
+            read_node(father_node.son[t+1],next_node);
+            if(now_son_node.father!=next_node.father) return;
+            if(now_son_node.len+next_node.len>=now_son_node.size-2) return;
+            now_son_node.d[now_son_node.len]=father_node.d[t];
+            node_erase(now_son_node.d[now_son_node.len],father_node);
+            now_son_node.len++;
+            write_node(father_node.Node_ID,father_node);
+            if(father_node.Node_ID==root.Node_ID) root=father_node;
+            if(now_son_node.is_father_of_block){
+                for(int i=0;i<next_node.len;++i){
+                    now_son_node.d[now_son_node.len+i]=next_node.d[i];
+                    now_son_node.son[now_son_node.len+i]=next_node.son[i];
+                    update_block_father(next_node.son[i],now_son_node.Node_ID);
+                }
+                now_son_node.son[now_son_node.len+next_node.len]=next_node.son[next_node.len];
+                update_block_father(next_node.son[next_node.len],now_son_node.Node_ID);
+            }else{
+                for(int i=0;i<next_node.len;++i){
+                    now_son_node.d[now_son_node.len+i]=next_node.d[i];
+                    now_son_node.son[now_son_node.len+i]=next_node.son[i];
+                    update_node_father(next_node.son[i],now_son_node.Node_ID);
+                }
+                now_son_node.son[now_son_node.len+next_node.len]=next_node.son[next_node.len];
+                update_node_father(next_node.son[next_node.len],now_son_node.Node_ID);
+            }
+
+
+            now_son_node.len=now_son_node.len+next_node.len;
+            if(now_son_node.father==root.Node_ID){
+                root=father_node;
+                if(root.len==0){
+                    now_son_node.father=-1;
+                    root=now_son_node;
+                }
+            }
+            write_node(now_son_node.Node_ID,now_son_node);
         };
-        void merge_block(){
-
+        void merge_block(int Block_ID_1,int Block_ID_2){
+            if(Block_ID_2==-1||Block_ID_1==-1) return;
+            block_type block_1,block_2;
+            read_block(Block_ID_1,block_1);
+            read_block(Block_ID_2,block_2);
+            if(block_1.father != block_2.father){
+                return;
+            }
+            if(block_1.len+block_2.len >= block_2.size) return;
+            node_type father;
+            read_node(block_1.father,father);
+            node_erase(block_1.d[block_1.len-1],father);
+            write_node(block_1.father,father);
+            if(father.Node_ID==root.Node_ID) root=father;
+            for(int i=0;i<block_2.len;++i){
+                block_1.d[block_1.len+i]=block_2.d[i];
+            }
+            block_1.next=block_2.next;
+            block_1.len+=block_2.len;
+            write_block(Block_ID_1,block_1);
         };
 
 
         void node_insert(int target_ID,s& target,int new_son_ID){
             node_type target_node;
             read_node(target_ID,target_node);
+            /*if(target_node.len==1){
+                //第一个节点
+                target_node.d[0]=target;
+                target_node.son[1]=new_son_ID;
+                ++target_node.len;
+                write_node(target_ID,target_node);
+            }*/
             int t= upper_bound(target_node.d,target_node.d+target_node.len,target)-target_node.d;
             for(int i=target_node.len;i>t;--i){
                 target_node.d[i]=target_node.d[i-1];
-                target_node.son[i]=target_node.son[i-1];
+                target_node.son[i+1]=target_node.son[i];
             }
             target_node.d[t]=target;
-            target_node.son[t]=target_node.son[t+1];
             target_node.son[t+1]=new_son_ID;
             ++target_node.len;
             write_node(target_ID,target_node);
+            if(target_ID==root.Node_ID) root = target_node;
             if(target_node.len==target_node.size) split_node(target_ID);
+
         };
+        void update_block_father(int Block_ID,int father_ID){
+            block_type temp;
+            read_block(Block_ID,temp);
+            temp.father=father_ID;
+            write_block(Block_ID,temp);
+        }
+        void update_node_father(int Node_ID,int father_ID){
+            node_type temp;
+            read_node(Node_ID,temp);
+            temp.father=father_ID;
+            write_node(Node_ID,temp);
+        }
         void split_node(int target_ID){
             node_type target_node;
             node_type new_node;
             ++node_number;
             new_node.Node_ID=node_number;
             read_node(target_ID,target_node);
-            for(int i=0;i<target_node.len/2;++i){
-                new_node.d[i]=target_node.d[i+target_node.len-target_node.len/2];
-                new_node.son[i]=target_node.son[i+target_node.len-target_node.len/2];
+            if(target_node.is_father_of_block){
+                for(int i=0;i<target_node.len/2;++i){
+                    new_node.d[i]=target_node.d[i+target_node.len-target_node.len/2];
+                    new_node.son[i]=target_node.son[i+target_node.len-target_node.len/2];
+                    update_block_father(target_node.son[i+target_node.len-target_node.len/2],new_node.Node_ID);
+                }
+                new_node.son[target_node.len/2]=target_node.son[target_node.len];
+                update_block_father(target_node.son[target_node.len],new_node.Node_ID);
+            }else{
+                for(int i=0;i<target_node.len/2;++i){
+                    new_node.d[i]=target_node.d[i+target_node.len-target_node.len/2];
+                    new_node.son[i]=target_node.son[i+target_node.len-target_node.len/2];
+                    update_node_father(target_node.son[i+target_node.len-target_node.len/2],new_node.Node_ID);
+                }
+                new_node.son[target_node.len/2]=target_node.son[target_node.len];
+                update_node_father(target_node.son[target_node.len],new_node.Node_ID);
             }
+
+
             new_node.len=target_node.len/2;
-            target_node.len-=new_node.len;
+            target_node.len-=(new_node.len+1);
             new_node.father=target_node.father;
             new_node.is_father_of_block=target_node.is_father_of_block;
 
             if(target_node.father!=-1){
-                node_insert(target_node.father,target_node.d[target_node.len-1],new_node.Node_ID);
+                write_node(target_node.Node_ID,target_node);
+                write_node(new_node.Node_ID,new_node);
+                node_insert(target_node.father,target_node.d[target_node.len],new_node.Node_ID);
             }else{
                 node_type new_root;
                 ++node_number;
                 new_root.Node_ID=node_number;
-                new_root.d[0]=target_node.d[target_node.len-1];
-                new_root.d[1]=new_node.d[new_node.len-1];
+                new_root.d[0]=target_node.d[target_node.len];
                 new_root.son[0]=target_node.Node_ID;
                 new_root.son[1]=new_node.Node_ID;
                 new_root.father=-1;
                 target_node.father=new_root.Node_ID;
                 new_node.father=new_root.Node_ID;
-                new_root.len=2;
+                new_root.len=1;
                 new_root.is_father_of_block= false;
                 root=new_root;
+                write_node(target_node.Node_ID,target_node);
+                write_node(new_node.Node_ID,new_node);
                 write_node(new_root.Node_ID,new_root);
+                return;
             }
-            write_node(target_node.Node_ID,target_node);
-            write_node(new_node.Node_ID,new_node);
+
         };
         void split_block(int target_ID){
             block_type target_block;
@@ -737,67 +913,294 @@ namespace king_zyx{
             new_block.next=target_block.next;
             target_block.next=new_block.Block_ID;
             new_block.father=target_block.father;
-            node_insert(target_block.father,target_block.d[target_block.len-1],new_block.Block_ID);
             write_block(target_block.Block_ID,target_block);
             write_block(new_block.Block_ID,new_block);
+            node_insert(target_block.father,target_block.d[target_block.len-1],new_block.Block_ID);
+
         };
 
-        void node_erase(){
-
+        void node_erase(s& target,node_type& now_node){
+            int t= lower_bound(now_node.d,now_node.d+now_node.len,target)-now_node.d;
+            for(int i=t+1;i<now_node.len;++i){
+                now_node.d[i-1]=now_node.d[i];
+                now_node.son[i]=now_node.son[i+1];
+            }
+            --now_node.len;
+            if(now_node.father!=-1&&now_node.len<now_node.size/2){
+                node_type father;
+                read_node(now_node.father,father);
+                merge_node(now_node,father);
+            }
         };
         void insert(key k_,value v_){
             block_type target_block;
-            node_type now_node;
             //第一个元素时特判
             //并块时确保1不被并进别的里
-            read_block(1,target_block);
-            if(target_block.len==0){
+            /*read_block(root.son[0],target_block);
+            if(root.is_father_of_block&&root.len==1&&target_block.len==0){
                 ++target_block.len;
                 target_block.d[0].k=k_;
                 target_block.d[0].v=v_;
-                ++root.len;
                 root.d[0].k=k_;
                 root.d[0].v=v_;
-                write_block(1,target_block);
-            }else{
-                s target(k_,v_);
-                /*if(root.len==0){
-                    //root节点无关键字时特判。
-                    int t=upper_bound(target_block.d,target_block.d+target_block.len,target)-target_block.d;
-                    for(int i=target_block.len;i>t;--i){
-                        target_block.d[i]=target_block.d[i-1];
-                    }
-                    target_block.d[t]=target;
-                    target_block.len++;
-                    write_block(target_block.Block_ID,target_block);
-                    if(target_block.len==target_block.size) split_block(target_block.Block_ID);
-                    return;
-                }*/
-                int t= find(target,root.Node_ID,target_block);
-                for(int i=target_block.len;i>t;--i){
-                    target_block.d[i]=target_block.d[i-1];
-                }
-                target_block.d[t]=target;
-                target_block.len++;
-                write_block(target_block.Block_ID,target_block);
-                if(target_block.len==target_block.size) split_block(target_block.Block_ID);
-            }
-        };
+                block_type nxt_block;
+                ++block_number;
 
+                nxt_block.father=root.Node_ID;
+                nxt_block.Block_ID=block_number;
+                root.son[1]=nxt_block.Block_ID;
+                target_block.next=nxt_block.Block_ID;
+                write_block(target_block.Block_ID,target_block);
+                write_block(nxt_block.Block_ID,nxt_block);
+                write_node(1,root);
+                return;
+            }*/
+
+            s target(k_,v_);
+            int t= find(target,root.Node_ID,target_block);
+            for(int i=target_block.len;i>t;--i){
+                target_block.d[i]=target_block.d[i-1];
+            }
+            target_block.d[t]=target;
+            target_block.len++;
+            write_block(target_block.Block_ID,target_block);
+            if(target_block.len==target_block.size) split_block(target_block.Block_ID);
+
+        };
+        int find_l(s &target,int now_node_ID,block_type &pos){
+            node_type temp;
+            read_node(now_node_ID,temp);
+            int t= lower_bound(temp.d,temp.d+temp.len,target)-temp.d;
+            if(temp.is_father_of_block){
+                read_block(temp.son[t],pos);
+                if(pos.len==0) return 0;
+                return lower_bound(pos.d,pos.d+pos.len,target)-pos.d;
+            }else{
+                return find_l(target,temp.son[t],pos);
+            }
+        }
         void erase(key k_,value v_){
             s target(k_,v_);
-            block_type target_block;
-            int t= find(target,root.Node_ID,target_block);
-            if(target_block.d[t-1]<target) return;
-            for(int i=t;i<target_block.len;++i){
-                target_block.d[i-1]=target_block.d[i];
+            block_type now_block;
+            int t= find_l(target,root.Node_ID,now_block);
+            if(now_block.d[t]!=target) return;
+            for(int i=t+1;i<now_block.len;++i){
+                now_block.d[i-1]=now_block.d[i];
             }
-            --target_block.len;
+            --now_block.len;
+            write_block(now_block.Block_ID,now_block);
+            if (now_block.len<now_block.size/2){
+                merge_block(now_block.Block_ID,now_block.next);
+            }
+
         };
-        vector<s> dis();
+
+        int key_lower_bound(s* first,s* last,key k_){
+            s* f=first;
+            if(first==last)return first-f;
+            last--;
+            if(k_>last->k)return last+1-f;
+            while (first < last) {
+                s* mid = first + (last - first) / 2;
+                if (mid->k < k_) {
+                    first = mid + 1;
+                } else {
+                    last = mid;
+                }
+            }
+            return first-f;
+        }
+
+        int binary_search(key k_,int now_node_ID,block_type& target_block){
+            node_type temp;
+            read_node(now_node_ID,temp);
+            int t= key_lower_bound(temp.d,temp.d+temp.len,k_);
+            if(temp.is_father_of_block){
+                read_block(temp.son[t],target_block);
+                if(target_block.len==0) return 0;
+                return key_lower_bound(target_block.d,target_block.d+target_block.len,k_);
+            }else{
+                return binary_search(k_,temp.son[t],target_block);
+            }
+        }
+        vector<value> dis(key k_){
+            vector<value> ans;
+            block_type target_block;
+            int t= binary_search(k_,root.Node_ID,target_block);
+            bool end= false;
+            for(int i=t;i<target_block.len;++i){
+                if(target_block.d[i].k<k_) continue;
+                if(target_block.d[i].k>k_){
+                    end=true;
+                    break;
+                }
+                ans.push_back(target_block.d[i].v);
+            }
+            while ((!end)&&target_block.next!=-1){
+                read_block(target_block.next,target_block);
+                for(int i=0;i<target_block.len;++i){
+                    if(target_block.d[i].k>k_){
+                        end=true;
+                        break;
+                    }
+                    ans.push_back(target_block.d[i].v);
+                }
+            }
+            return ans;
+        };
+        void clear_file(){
+            remove(node_file_name.c_str());
+            remove(block_file_name.c_str());
+        }
     };
 
 
 }
-int main(){
+
+class my_string {
+public:
+    char a[66];
+    int length;
+
+    my_string() {};
+    my_string(const my_string& other){
+        length=other.length;
+        strcpy(a,other.a);
+    }
+    my_string(std::string b) {
+        length = b.length();
+        for (int i = 0; i < length; ++i) {
+            a[i] = b[i];
+        }
+        a[length] = '\0';
+    }
+    my_string& operator=(const my_string& other){
+        if(&other== this) return *this;
+        length=other.length;
+        strcpy(a,other.a);
+        return *this;
+    }
+    bool operator>(my_string &b) {
+        return (strcmp(a,b.a)>0);
+    }
+
+    bool operator<(my_string &b) {
+        return (strcmp(a,b.a)<0);
+    }
+
+    bool operator==(my_string &b) {
+        return (strcmp(a,b.a)==0);
+    }
+
+    bool operator!=(my_string &b) {
+        return (strcmp(a,b.a)!=0);
+    }
+    bool operator>=(my_string &b) {
+        return (strcmp(a,b.a)>=0);
+    }
+
+    bool operator<=(my_string &b) {
+        return (strcmp(a,b.a)<=0);
+    }
+};
+king_zyx::BPT<my_string,int> t;
+king_zyx::vector<int> ans1;
+void test(my_string d){
+    ans1 = t.dis(d);
+    if (ans1.size() == 0) std::cout << "null" << std::endl;
+    else {
+        std::cout<<ans1.size()<<'\n';
+        for (auto it=ans1.begin();it!=ans1.end();++it) {
+            std::cout << *it << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+int main() {
+
+/*
+    //freopen("a.in","r",stdin);
+    //freopen("a.out","w",stdout);
+    //my_string zyx("zyx114");
+    //for(int i=1;i<=52;++i){
+    //   t.insert(zyx,i);
+    //}//?
+    std::string cmd;
+    int n;
+    std::string key;
+    int value;
+    std::cin >> n;
+    for (int i = 1; i <= n; ++i) {
+        //i==292时有问题
+        std::cin >> cmd;
+        if (cmd == "insert") {
+            std::cin >> key >> value;
+            my_string temp(key);
+            t.insert(temp,value);
+        } else if (cmd == "delete") {
+            std::cin >> key >> value;
+            my_string temp(key);
+            t.erase(temp,value);
+        } else if (cmd == "find") {
+            std::cin >> key;
+            my_string temp(key);
+            king_zyx::vector<int> ans;
+            ans = t.dis(temp);
+            if (ans.size() == 0) std::cout << "null" << std::endl;
+            else {
+                for (auto it=ans.begin();it!=ans.end();++it) {
+                    std::cout << *it << " ";
+                }
+                std::cout << std::endl;
+            }
+        }
+    }
+    //t.clear_file();
+
+*/
+    my_string d("zyx");
+    my_string dd[53];
+    my_string l("zyx1");
+    dd[0]=l;
+    std::string m="zyx1";
+    for(int i=1;i<=52;++i){
+        m+="1";
+        my_string ll(m);
+        dd[i]=m;
+    }
+
+    int k[100000],p[100000];
+    for(int i=0;i<100000;++i){
+        k[i]=i;
+        p[i]=i;
+    }
+    for(int i=99000;i<100000;++i){
+        k[i]=i;
+    }
+    std::random_shuffle(k,k+100000);
+    std::random_shuffle(p,p+100000);
+    for(int i=99999;i>=0;--i){
+        //i==40234时
+        t.insert(d,k[i]);
+    }
+    int zzz=99999;
+    int yyy=10000;
+    //zzz=98683时有问题
+    //i=11507
+    for(int i=zzz;i>=yyy;--i){
+        t.erase(d,p[i]);
+    }
+    std::cout<<100000-(zzz-yyy+1)<<'\n';
+    //my_string de("zyx11110");
+    king_zyx::Block<my_string,int> b;
+    king_zyx::Node<my_string,int> n;
+    t.read_node(t.root.Node_ID,n);
+    test(d);
+    //test(de);
+    //for(int i=0;i<=52;++i){
+    //    test(dd[i]);
+    //}
+
+    t.clear_file();
+
 }
