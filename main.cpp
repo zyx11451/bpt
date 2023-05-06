@@ -5,7 +5,7 @@
 #include <cstring>
 #include <cmath>
 #include <string>
-#include <algorithm>
+//#include <algorithm>
 //#include <set>
 
 const int disk_block_size=4096;
@@ -570,7 +570,7 @@ namespace king_zyx{
         //存储子节点或块的元素的最大值
     public:
         typedef datatype<key,value> s;
-        static const int size=4000/(sizeof(key)+ sizeof(value)+ sizeof(int));
+        static const int size=16200/(sizeof(key)+ sizeof(value)+ sizeof(int));
         int Node_ID;//1,2,3...
         int father;
         int len;
@@ -601,7 +601,7 @@ namespace king_zyx{
     };
     template<class key,class value>
     class Block{
-        static const int size=4000/(sizeof(key)+ sizeof(value));
+        static const int size=16200/(sizeof(key)+ sizeof(value));
         int Block_ID;//1,2,3...
         int father;
         int len;
@@ -782,7 +782,6 @@ namespace king_zyx{
 
             now_son_node.len=now_son_node.len+next_node.len;
             if(now_son_node.father==root_node_ID){
-                root_node_ID=father_node.Node_ID;
                 if(father_node.len==0){
                     now_son_node.father=-1;
                     root_node_ID=now_son_node.Node_ID;
@@ -806,7 +805,6 @@ namespace king_zyx{
                 special_node_erase(block_1.Block_ID,father);
             }
             write_node(block_1.father,father);
-            if(father.Node_ID==root_node_ID) root_node_ID=father.Node_ID;
             for(int i=0;i<block_2.len;++i){
                 block_1.d[block_1.len+i]=block_2.d[i];
             }
@@ -1183,6 +1181,7 @@ int main() {
     //t.clear_file();
 
 /*
+
     my_string d("zyx");
     my_string dd[53];
     my_string l("zyx1");
@@ -1193,11 +1192,11 @@ int main() {
         my_string ll(m);
         dd[i]=m;
     }
-
+/*
     int k[100000],p[100000];
     for(int i=0;i<100000;++i){
         k[i]=i;
-        p[i]=i;
+        p[i]=i+56984;
     }
     std::random_shuffle(k,k+100000);
     std::random_shuffle(p,p+100000);
@@ -1210,21 +1209,14 @@ int main() {
     for(int i=zzz;i>=yyy;--i){
         t.erase(d,p[i]);
     }
-    for(int i=99999;i>=0;--i){
-        //i==40234时
-        t.insert(d,k[i]);
-    }
-    for(int i=0;i<100000;++i){
-        p[i]+=p[i];
-    }
-    for(int i=zzz;i>=yyy;--i){
-        t.erase(d,p[i]);
-    }
+
+
     std::cout<<100000-(zzz-yyy+1)<<'\n';
     //my_string de("zyx11110");
     king_zyx::Block<my_string,int> b;
     king_zyx::Node<my_string,int> n;
     t.read_node(t.root_node_ID,n);
+
     test(d);
     //test(de);
     //for(int i=0;i<=52;++i){
