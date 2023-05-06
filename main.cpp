@@ -6,7 +6,7 @@
 #include <cmath>
 #include <string>
 #include <algorithm>
-#include <set>
+//#include <set>
 
 const int disk_block_size=4096;
 namespace king_zyx{
@@ -636,7 +636,7 @@ namespace king_zyx{
             int root_ID;
         };
     public:
-        node_type root;
+        int root_node_ID;
         void read_head(head &t){
             block_data.seekg(0);
             block_data.read(reinterpret_cast<char *>(& t), sizeof(head));
@@ -701,7 +701,10 @@ namespace king_zyx{
                 head h;
                 write_head(h);
                 ++node_number;
-                root.Node_ID=node_number;
+                //root.Node_ID=node_number;
+                root_node_ID=1;
+                node_type root;
+                root.Node_ID=root_node_ID;
                 root.len=0;
                 block_type first_block;
                 first_block.next=end_pos;
@@ -717,7 +720,7 @@ namespace king_zyx{
                 block_data.open(block_file_name);
                 head h;
                 read_head(h);
-                read_node(h.root_ID,root);
+                root_node_ID=h.root_ID;
                 node_number=h.nn;
                 block_number=h.bn;
             }
@@ -726,7 +729,7 @@ namespace king_zyx{
             head h;
             h.bn=block_number;
             h.nn=node_number;
-            h.root_ID=root.Node_ID;
+            h.root_ID=root_node_ID;
             write_head(h);
         }
         inline int find(s &target,int now_node_ID,block_type &pos){
@@ -745,7 +748,7 @@ namespace king_zyx{
 
             int t;
             if(now_son_node.len==0){
-                for(t=0;t<=father_node.len;++t) if(father_node.son[t]==now_son_node.Node_ID) break;
+            for(t=0;t<=father_node.len;++t) if(father_node.son[t]==now_son_node.Node_ID) break;
             }else
             t= upper_bound(father_node.d,father_node.d+father_node.len,now_son_node.d[now_son_node.len-1])-father_node.d;
             if(t>=father_node.len) return;
@@ -757,7 +760,7 @@ namespace king_zyx{
             node_erase(now_son_node.d[now_son_node.len],father_node);
             now_son_node.len++;
             write_node(father_node.Node_ID,father_node);
-            if(father_node.Node_ID==root.Node_ID) root=father_node;
+            if(father_node.Node_ID==root_node_ID) root_node_ID=father_node.Node_ID;
             if(now_son_node.is_father_of_block){
                 for(int i=0;i<next_node.len;++i){
                     now_son_node.d[now_son_node.len+i]=next_node.d[i];
@@ -778,11 +781,11 @@ namespace king_zyx{
 
 
             now_son_node.len=now_son_node.len+next_node.len;
-            if(now_son_node.father==root.Node_ID){
-                root=father_node;
-                if(root.len==0){
+            if(now_son_node.father==root_node_ID){
+                root_node_ID=father_node.Node_ID;
+                if(father_node.len==0){
                     now_son_node.father=-1;
-                    root=now_son_node;
+                    root_node_ID=now_son_node.Node_ID;
                 }
             }
             write_node(now_son_node.Node_ID,now_son_node);
@@ -798,9 +801,12 @@ namespace king_zyx{
             if(block_1.len+block_2.len >= block_2.size) return;
             node_type father;
             read_node(block_1.father,father);
-            node_erase(block_1.d[block_1.len-1],father);
+            if(block_1.len!=0) node_erase(block_1.d[block_1.len-1],father);
+            else{
+                special_node_erase(block_1.Block_ID,father);
+            }
             write_node(block_1.father,father);
-            if(father.Node_ID==root.Node_ID) root=father;
+            if(father.Node_ID==root_node_ID) root_node_ID=father.Node_ID;
             for(int i=0;i<block_2.len;++i){
                 block_1.d[block_1.len+i]=block_2.d[i];
             }
@@ -829,7 +835,7 @@ namespace king_zyx{
             target_node.son[t+1]=new_son_ID;
             ++target_node.len;
             write_node(target_ID,target_node);
-            if(target_ID==root.Node_ID) root = target_node;
+            if(target_ID==root_node_ID) root_node_ID = target_node.Node_ID;
             if(target_node.len==target_node.size) split_node(target_ID);
 
         };
@@ -891,7 +897,7 @@ namespace king_zyx{
                 new_node.father=new_root.Node_ID;
                 new_root.len=1;
                 new_root.is_father_of_block= false;
-                root=new_root;
+                root_node_ID=new_root.Node_ID;
                 write_node(target_node.Node_ID,target_node);
                 write_node(new_node.Node_ID,new_node);
                 write_node(new_root.Node_ID,new_root);
@@ -932,6 +938,23 @@ namespace king_zyx{
                 merge_node(now_node,father);
             }
         };
+        void special_node_erase(int block_ID,node_type& now_node){
+            int t= 0;
+            for(t=0;t<now_node.len;++t){
+                if(now_node.son[t]==block_ID) break;
+            }
+            if(t>=now_node.len)return;//其实不会出现这种状况，因为删的block必不是最后一个。
+            for(int i=t+1;i<now_node.len;++i){
+                now_node.d[i-1]=now_node.d[i];
+                now_node.son[i]=now_node.son[i+1];
+            }
+            --now_node.len;
+            if(now_node.father!=-1&&now_node.len<now_node.size/2){
+                node_type father;
+                read_node(now_node.father,father);
+                merge_node(now_node,father);
+            }
+        }
         void insert(key k_,value v_){
             block_type target_block;
             //第一个元素时特判
@@ -957,7 +980,7 @@ namespace king_zyx{
             }*/
 
             s target(k_,v_);
-            int t= find(target,root.Node_ID,target_block);
+            int t= find(target,root_node_ID,target_block);
             for(int i=target_block.len;i>t;--i){
                 target_block.d[i]=target_block.d[i-1];
             }
@@ -982,8 +1005,11 @@ namespace king_zyx{
         void erase(key k_,value v_){
             s target(k_,v_);
             block_type now_block;
-            int t= find_l(target,root.Node_ID,now_block);
-            if(now_block.d[t]!=target) return;
+            int t= find_l(target,root_node_ID,now_block);
+            if(now_block.d[t]!=target){
+                return;
+            }
+
             for(int i=t+1;i<now_block.len;++i){
                 now_block.d[i-1]=now_block.d[i];
             }
@@ -1026,7 +1052,7 @@ namespace king_zyx{
         vector<value> dis(key k_){
             vector<value> ans;
             block_type target_block;
-            int t= binary_search(k_,root.Node_ID,target_block);
+            int t= binary_search(k_,root_node_ID,target_block);
             bool end= false;
             for(int i=t;i<target_block.len;++i){
                 if(target_block.d[i].k<k_) continue;
@@ -1118,7 +1144,7 @@ void test(my_string d){
 }
 int main() {
 
-/*
+
     //freopen("a.in","r",stdin);
     //freopen("a.out","w",stdout);
     //my_string zyx("zyx114");
@@ -1131,7 +1157,6 @@ int main() {
     int value;
     std::cin >> n;
     for (int i = 1; i <= n; ++i) {
-        //i==292时有问题
         std::cin >> cmd;
         if (cmd == "insert") {
             std::cin >> key >> value;
@@ -1157,7 +1182,7 @@ int main() {
     }
     //t.clear_file();
 
-*/
+/*
     my_string d("zyx");
     my_string dd[53];
     my_string l("zyx1");
@@ -1174,9 +1199,6 @@ int main() {
         k[i]=i;
         p[i]=i;
     }
-    for(int i=99000;i<100000;++i){
-        k[i]=i;
-    }
     std::random_shuffle(k,k+100000);
     std::random_shuffle(p,p+100000);
     for(int i=99999;i>=0;--i){
@@ -1184,9 +1206,17 @@ int main() {
         t.insert(d,k[i]);
     }
     int zzz=99999;
-    int yyy=10000;
-    //zzz=98683时有问题
-    //i=11507
+    int yyy=0;
+    for(int i=zzz;i>=yyy;--i){
+        t.erase(d,p[i]);
+    }
+    for(int i=99999;i>=0;--i){
+        //i==40234时
+        t.insert(d,k[i]);
+    }
+    for(int i=0;i<100000;++i){
+        p[i]+=p[i];
+    }
     for(int i=zzz;i>=yyy;--i){
         t.erase(d,p[i]);
     }
@@ -1194,7 +1224,7 @@ int main() {
     //my_string de("zyx11110");
     king_zyx::Block<my_string,int> b;
     king_zyx::Node<my_string,int> n;
-    t.read_node(t.root.Node_ID,n);
+    t.read_node(t.root_node_ID,n);
     test(d);
     //test(de);
     //for(int i=0;i<=52;++i){
@@ -1202,5 +1232,5 @@ int main() {
     //}
 
     t.clear_file();
-
+*/
 }
